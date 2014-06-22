@@ -843,21 +843,21 @@ NEXTACTIVE:
 		$outbuff .= "   $src to $dst$CRLF";
 	}
 
-	foreach my $addr2 (keys %STATE) {
-		if ($STATE{$addr2} ne 'CONNECTED') {
-			if (!exists($HOSTREV{$addr2})) {
-				my $src = get_display_host($addr2);
-
-				if ($addr2 eq $addr) {
-					$outbuff .= ' * ';
-				} else {
-					$outbuff .= '   ';
-				}
-
-				$outbuff .= "$src -- " . lc($STATE{$addr2}) . $CRLF;
-			}
-		}
-	}
+#	foreach my $addr2 (keys %STATE) {
+#		if ($STATE{$addr2} ne 'CONNECTED') {
+#			if (!exists($HOSTREV{$addr2})) {
+#				my $src = get_display_host($addr2);
+#
+#				if ($addr2 eq $addr) {
+#					$outbuff .= ' * ';
+#				} else {
+#					$outbuff .= '   ';
+#				}
+#
+#				$outbuff .= "$src -- " . lc($STATE{$addr2}) . $CRLF;
+#			}
+#		}
+#	}
 
 	$outbuff .= ${PROMPT};
 
