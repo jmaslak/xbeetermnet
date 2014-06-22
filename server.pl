@@ -221,7 +221,7 @@ sub receive_tx_status {
 
 		# XXX We should play with this a bit.
 		$PENDING{$addr}->{time} = (time() - $MAX_PENDING_TIME) + .1;
-		print "Delaying...(", length($OUTBUFFER{$addr}), " bytes)\n";
+		# print "Delaying...(", length($OUTBUFFER{$addr}), " bytes)\n";
 		return;
 	}
 
@@ -467,6 +467,14 @@ sub handle_input {
 
 			delete $ESCAPE{$src};
 			delete $ESCAPETM{$src};
+
+			if (exists($STATE{$addr}) and ($STATE{$addr} eq 'CHAT')) {
+				# XXX We should use a terminal capability database.
+				$data =~ s/\r/\r\n/gs;
+				$data =~ s/[\x08\x7f]/\x08 \x08/gs;
+
+				tx($src, $data);
+			}
 		
 			tx($addr, $data);
 		}
@@ -774,6 +782,10 @@ sub cmd_connect {
 		$outbuff2 .= "${TERMYELLOW}Hit ESC four times to return to Spider.$CRLF$TERMNORMAL";
 		$outbuff2 .= $CRLF;
 		tx($addr2, $outbuff2);
+		$STATE{$addr}  = 'CHAT';
+		$STATE{$addr2} = 'CHAT';
+	} else {
+		$STATE{$addr} = 'CONNECTED';
 	}
 
 	if (exists($MAP{$addr})) {
@@ -782,8 +794,6 @@ sub cmd_connect {
 
 	$MAP{$addr} = $addr2;
 	$MAP{$addr2} = $addr;
-
-	$STATE{$addr} = 'CONNECTED';
 
 	# Send newline to host
 	tx($addr2, "\n");
