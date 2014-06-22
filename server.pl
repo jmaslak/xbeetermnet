@@ -69,8 +69,10 @@ my $LASTDISCOVER; # Time last discovery was performed
 my $api;
 
 MAIN: {
-	my $serial = Device::SerialPort->new('/dev/ttyUSB1');
-	$serial->baudrate(115200);
+	validate_args();
+
+	my $serial = Device::SerialPort->new($ARGV[0]);
+	$serial->baudrate($ARGV[1]);
 	$serial->databits(8);
 	$serial->stopbits(1);
 	$serial->parity('none');
@@ -94,6 +96,28 @@ MAIN: {
 	}
 }
 
+sub validate_args {
+	if (scalar(@_) != 0) { confess 'invalid call' }
+
+	if (scalar(@ARGV) != 2) {
+		exit_help();
+	}
+
+	# Make sure baud rate looks like a number.
+	if ($ARGV[1] =~ /[^0-9]/) {
+		exit_help();
+	}
+}
+
+sub exit_help {
+	if (scalar(@_) != 0) { confess 'invalid call' }
+
+	print STDERR "You must provide two command line arguments.\n";
+	print STDERR "  1st Argument: The serial port that has the XBee. Ex: /dev/ttyUSB0\n";
+	print STDERR "  2nd Argument: The baud rate. Ex: 9600\n";
+
+	exit(1);
+}
 
 sub housekeeping {
 	if (scalar(@_) != 0) { confess 'invalid call' }
