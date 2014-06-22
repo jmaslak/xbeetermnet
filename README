@@ -1,0 +1,41 @@
+XBee Term Net
+Copyright (C) 2014 Joel Maslak
+
+This code allows you to build an XBee terminal network using Digi XBee
+modules.  This code only works with Series 2 or 2.5 modules, and has
+only been tested in ZigBee mode.
+
+There are four roles in this network:
+
+ Coordinator - This is both the ZigBee "coordinator" and the master
+               "hub" for the message switching.  This XBee must be
+               in API mode.
+
+ Terminal    - Essentially "dumb terminal" remote nodes that can
+               access the CUI and initiate connections to other
+               nodes.  These XBees must be in transparent mode.
+
+ Console     - These are "server" nodes, I.E. connections to a
+               host (or router, switch, etc) that only receives
+               connections.  These XBees also must be in
+               transparent mode.
+
+ Unknown     - All other XBees are in "unknown" mode.  They can 
+               initiate connections as terminals can, but some
+               functionality won't work.  This is to allow other
+               Zigbee devices on the same network.
+
+There is an automatic network discovery process that builds a list
+of remote ZigBee nodes and their roles.  This process relies on the
+"NODE IDENTIFICATION" (AT NI) string on each node.  Theis string
+should consist of two words (make sure you don't have leading
+spaces - the XCTU-NG GUI likes to add one!), the first one in all
+upper case should be COORDINATOR, TERMINAL, or CONSOLE, while the
+second one is case-insensitive and should be a unique hostname of
+the node.
+
+You must configure the XBees with any appropriate security, PAN,
+and general network configuration that is required for the system
+to properly function.  This is outside of the scope of this
+document.
+
