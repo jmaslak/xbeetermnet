@@ -50,11 +50,6 @@ my %MAP;
 #	'13a200:40aebb0a' => '13a200:409f7175',
 #	'13a200:409f7175' => '13a200:40aebb0a'
 
-# my %HOSTS = (
-#	red  => '13a200:40aebb0a',
-#	gray => '13a200:408b48e4'
-# );
-
 my %DISCOVERY;	# Hash of hashes (keys are "addr" and "type"), key is name
 my %HOSTREV;	# Reverse of %DISCOVERY
 
@@ -74,8 +69,6 @@ my $LASTDISCOVER; # Time last discovery was performed
 my $api;
 
 MAIN: {
-	# build_host_rev();
-
 	my $serial = Device::SerialPort->new('/dev/ttyUSB1');
 	$serial->baudrate(115200);
 	$serial->databits(8);
@@ -183,19 +176,26 @@ sub receive_tx_status {
 
 	if (!exists($FRAMEID{$rx->{frame_id}})) { return; }
 
+	# XXX Convert to using a constant
 	if ($rx->{delivery_status} == 50) {
+		# This means that the XBee can't handle any traffic
+		# from us, probably because it's getting swamped by
+		# traffic from other XBees.  So we have to build
+		# a massive buffer to handle the backlog.  Otherwise
+		# we lose characters, and losing characters is of
+		# course a Bad Thing.
+
 		free_frame_id($rx->{frame_id});
 
 		if ($FRAMEID{$rx->{frame_id}}->{type} ne 'TX') { return }
 
 		my $addr = $FRAMEID{$rx->{frame_id}}->{addr};
-		#my $dest = get_destination($addr);
 		my $pkt = $FRAMEID{$rx->{frame_id}}->{data};
 
 		$pkt .= $OUTBUFFER{$addr};
 		$OUTBUFFER{$addr} = $pkt;
 
-		# $PENDING{$addr}->{time} = (time() - $MAX_PENDING_TIME) + .05;
+		# XXX We should play with this a bit.
 		$PENDING{$addr}->{time} = (time() - $MAX_PENDING_TIME) + .1;
 		print "Delaying...(", length($OUTBUFFER{$addr}), " bytes)\n";
 		return;
@@ -270,7 +270,6 @@ sub receive_at_response {
 		discover_neighbor($rx);
 	}
 	
-	# if (exists($BUFFER{$addr}) and (length($BUFFER{$addr}) > 0)) {
 	$outbuff .= $CRLF;
 
 	$outbuff .= "${TERMBRIGHT}${TERMCYAN}Received AT Response from ";
@@ -349,7 +348,9 @@ sub free_frame_id {
 	if (exists($FRAMEID{$frameid})) {
 		my $src = $FRAMEID{$frameid};
 
-		# delete $FRAMEID{$frameid}; # Some frames get more than one response
+		# Some frames get more than one response, so
+		# we don't actually get rid of the $FRAMEID
+		# method.  Yes, it's a bit of a race.
 
 		# Free transmitted frame
 		$api->free_frame_id($frameid);
@@ -550,7 +551,7 @@ sub command {
 			$BUFFER{$addr} = '';
 		
 		} elsif ($char =~ /[A-Za-z0-9\?: ]/) {
-			# Alphanumerics
+			# Alphanumerics and other limited characters
 			$BUFFER{$addr} .= $char;
 			$outbuff .= $char;
 		} else {
@@ -640,14 +641,6 @@ sub get_destination {
 	return $dest;
 }
 
-# sub build_host_rev {
-#	if (scalar(@_) != 0) { confess 'invalid call' }
-#
-#	foreach my $node (keys %HOSTS) {
-#		$HOSTREV{$HOSTS{$node}} = $node;
-#	}
-# }
-
 sub get_display_host {
 	if (scalar(@_) != 1) { confess 'invalid call' }
 	my $addr = shift;
@@ -719,8 +712,6 @@ sub cmd_connect {
 
 	my $dhost = lc($params->[0]);
 
-	# XXX We should let term connect to term
-	# if ((!exists($DISCOVERY{$dhost})) or ($DISCOVERY{$dhost}->{type} ne 'CONSOLE')) {
 	# XXX We should allow connection to unknown hosts
 	if (!exists($DISCOVERY{$dhost})) {
 		$outbuff .= "${TERMERR}Invalid host name (use HELP to get host list)$CRLF";
