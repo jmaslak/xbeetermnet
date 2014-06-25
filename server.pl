@@ -15,6 +15,7 @@ use Carp;
 use Device::SerialPort;
 use Device::XBee::API;
 use Data::Dumper;
+use Symbol;
 use Time::HiRes qw/time/;
 
 my $REDISCOVER = 300.0;
@@ -42,6 +43,7 @@ my %ZIGBEE_API_TYPE = (
 	136 => 'AT_RESPONSE',
 	139 => 'TX_STATUS',
 	144 => 'RECEIVE',
+	146 => 'SAMPLE',
 	151 => 'REMOTE_AT_RESPONSE',
 );
 	
@@ -186,6 +188,8 @@ sub receive {
 		receive_receive($rx);
 	} elsif ($ZIGBEE_API_TYPE{$rx->{api_type}} =~ /^(REMOTE_)?AT_RESPONSE$/) {
 		receive_at_response($rx);
+	} elsif ($ZIGBEE_API_TYPE{$rx->{api_type}} eq 'SAMPLE') {
+		receive_sample($rx);
 	} else {
 		if (defined($rx->{frame_id})) {
 			free_frame_id($rx->{frame_id});
@@ -245,6 +249,41 @@ sub receive_tx_status {
 			tx($src, $data);
 		}
 	}
+}
+
+sub receive_sample {
+	if (scalar(@_) != 1) { confess 'invalid call' }
+	my ($rx) = @_;
+
+	# Get the source address
+	my $src = sprintf('%x:%x', $rx->{sh}, $rx->{sl});
+	my $host = $src;
+	if (exists($HOSTREV{$src})) {
+		$host = $HOSTREV{$src};
+	}
+
+	my $fh = gensym();
+	open $fh, ">>sample.txt";
+	
+	print $fh scalar(time()), " $host";
+
+	print $fh " digfirst";	
+	foreach my $sample (@{$rx->{digital_channel_first}}) {
+		print $fh " $sample";
+	}
+
+	print $fh " digsecond";	
+	foreach my $sample (@{$rx->{digital_channel_second}}) {
+		print $fh " $sample";
+	}
+
+	print $fh " analog_inputs";
+	foreach my $sample (@{$rx->{analog_inputs}}) {
+		print $fh " $sample";
+	}
+	print $fh "\n";
+
+	close $fh;
 }
 
 sub receive_receive {
