@@ -374,7 +374,7 @@ sub discover_neighbor {
 	my $type;
 
 	my %nodeinfo;
-	if ($info =~ /^(TERM|CONSOLE|COORDINATOR|API) [^ ]+$/) {
+	if ($info =~ /^(TERM|CONSOLE|COORDINATOR|API|SENSOR) [^ ]+$/) {
 		($type, $name) = split / /, $info;
 	} else {
 		$type = 'UNKNOWN';
