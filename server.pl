@@ -297,8 +297,26 @@ sub receive_receive {
 	$NODEID{$src} = $rx->{na};
 		
 	update_lastheard($src);
+	
+	my $data = $rx->{data};
+	
+	# Check for ASR33 Destination
+	# Simulate MARK parity
+	if (exists($HOSTREV{$src}) and
+	    exists($DISCOVERY{$HOSTREV{$src}})) {
+    		if ($DISCOVERY{$HOSTREV{$src}}->{type} eq 'ASR33') {
+			$data =~ s/\n/\n\r/sg;
+			my $newdata = '';
+			foreach my $c (split //, $data) {
+				$c = chr(128 | ord($c));
+				$newdata .= $c;
+			}
+			$data = $newdata;
+		}
+	}
 
-	handle_input($src, $rx->{data});
+
+	handle_input($src, $data);
 }
 
 sub receive_at_response {
@@ -374,7 +392,7 @@ sub discover_neighbor {
 	my $type;
 
 	my %nodeinfo;
-	if ($info =~ /^(TERM|CONSOLE|COORDINATOR|API|SENSOR) [^ ]+$/) {
+	if ($info =~ /^(TERM|CONSOLE|ASR33CONSOLE|COORDINATOR|API|SENSOR) [^ ]+$/) {
 		($type, $name) = split / /, $info;
 	} else {
 		$type = 'UNKNOWN';
@@ -383,6 +401,8 @@ sub discover_neighbor {
 
 	if ($type eq 'CONSOLE') {
 		$STATE{$src} = 'CONSOLE';
+	} elsif ($type eq 'ASR33CONSOLE') {
+		$STATE{$src} = 'ASR33CONSOLE';
 	} elsif ($type eq 'COORDINATOR') {
 		$STATE{$src} = 'COORDINATOR';
 	}
@@ -482,7 +502,8 @@ sub handle_input {
 
 		if (($data =~ /\x1b+$/) and
 		    ((!exists($HOSTREV{$src})) or
-		     ($DISCOVERY{$HOSTREV{$src}}->{type} ne 'CONSOLE'))) {
+		     (($DISCOVERY{$HOSTREV{$src}}->{type} ne 'CONSOLE')
+		      and ($DISCOVERY{$HOSTREV{$src}}->{type} ne 'ASR33CONSOLE')))) {
 
 			my $esc = $data;
 			$esc =~ s/^[^\x1b]+//;
@@ -525,7 +546,9 @@ sub command {
 	my ($addr, $data, $err) = @_;
 
 	# Ignore packets in command mode from hosts
-	if (exists($HOSTREV{$addr}) and ($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'CONSOLE')) {
+	if (exists($HOSTREV{$addr}) and
+	    (($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'CONSOLE')
+    	    or ($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'ASR33CONSOLE'))) {
 		if (exists($STATE{$addr}) and ($STATE{$addr} eq 'COMMAND')) {
 			delete $STATE{$addr};
 		}
@@ -654,6 +677,21 @@ sub tx {
 	if (!defined($data)) { confess 'BAD DATA - ASSERT' };
 
 	my $dest = get_destination($addr);
+
+	# Check for ASR33 Destination
+	# Simulate MARK parity
+	if (exists($HOSTREV{$addr}) and
+	    exists($DISCOVERY{$HOSTREV{$addr}})) {
+    		if ($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'ASR33CONSOLE') {
+			# $data =~ s/\n/\n\r/sg; # Not to console
+			my $newdata = '';
+			foreach my $c (split //, $data) {
+				$c = chr(128 | ord($c));
+				$newdata .= $c;
+			}
+			$data = $newdata;
+		}
+	}
 
 	if (!exists($OUTBUFFER{$addr})) { $OUTBUFFER{$addr} = ''; }
 	if (!exists($PENDING{$addr}))   { $PENDING{$addr} = undef; }
@@ -912,7 +950,7 @@ sub cmd_disconnect {
 	my $dhost = lc($params->[0]);
 
 	# XXX Can't target users yet
-	if ((!exists($DISCOVERY{$dhost})) or ($DISCOVERY{$dhost}->{type} ne 'CONSOLE')) {
+	if ((!exists($DISCOVERY{$dhost})) or (($DISCOVERY{$dhost}->{type} ne 'CONSOLE') and ($DISCOVERY{$dhost}->{type} ne 'ASR33CONSOLE'))) {
 		$outbuff .= "${TERMERR}Invalid host name (use HELP to get host list)$CRLF";
 		$outbuff .= $PROMPT;
 
