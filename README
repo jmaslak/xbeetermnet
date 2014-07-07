@@ -1,19 +1,95 @@
 XBee Term Net
 Copyright (C) 2014 Joel Maslak
 
+WHAT IS THIS PROJECT?
+
+First, if you don't know what a serial console is, or can't tell
+USB from RS232, you probably aren't interested in this project.
+It's a relatively geeky project, for people who spend lots of
+time working with serial ports.
+
+This project was created when I got sick of having tons of RS232
+dongles and cables to manage routers, do hobby experiments, use
+out-of-band communication to network devices, etc.  I was
+envisioning a serial communication "network" where I could just plug
+a simple USB dongle, RS232 dongle, or 3.3v TTL XBee into all of my
+devices and have a wireless "cross-bar" type switch, where I could
+dynamically connect from any device to any device.  I.E. I could
+sit on my living room couch, open my laptop, and connect to a router
+or my PDP-8 replica, just as if I had a serial port.  It grew a bit
+and can handle tasks such as logging data points from remote XBee
+sensors.  The actual switch software, which is represented in this
+archive, allows a group of XBees (in "transparent serial" mode)
+to act like serial ports on whatever they are connected to.
+
+What's an XBee?  It's a little wireless communication board made
+by Digi.  It's got a downside of being somewhat pricey (about $20
+per XBee at this time), and unless you are directly connecting it
+to a 3.3V TTL serial port (unlikely, although I have enough of
+these that I do!), it needs some sort of serial or USB converter
+board to go along with it (which probably costs at least as much
+as the XBee).  Thus this isn't a super low cost solution.  But they
+work well, support an industry-standard protocol (Zigbee), and
+are readily available in small quantities.  They also support some
+built-in security.  The best part is that with the right adapter
+boards, they just look like a serial cable to the host device -
+so combined with this terminal networking software, you don't need
+anything special on your hosts beyond terminal software and/or some
+sort of getty input for a serial console.
+
+See: https://learn.sparkfun.com/tutorials/exploring-xbees-and-xctu
+
+When I started playing with the XBees, which can implement the Zigbee
+wireless mesh protocol (which does attract criticism for being a
+relatively closed standard), I was fascinated with how well things
+just seemed to work.  The mesh really did form, it really does seem
+to handle my number of devices fine, etc.  So I learned I could easily
+extend the network to places without good Wifi and to places where I
+wanted sensors (like my motorcycle trailer's 12V battery).  I will
+note that if you're expecting cable-level reliability and high speed,
+this isn't the technology for you.  It's more like a slow terminal of
+days gone by where you might dial in over a modem to a remote time
+sharing system - slow and you would occasionally see garbled output.
+With the XBees, you're more likely to see output transmitted twice
+or not at all.  But it's nice to be able to drop a portable "router"
+just outside my house (the router is nothing but an XBee hardwired
+to a 2-AA battery holder, which will run the XBee for days on one
+set of batteries) and then walk down to the park and open a serial
+connection to the equipment in my home!  That's cool if you're a
+geek like me.  Even if it is slow and somewhat lossy communication.
+
+DETAILS
+
 This code allows you to build an XBee terminal network using Digi XBee
 modules.  This code only works with Series 2 or 2.5 modules, and has
 only been tested in ZigBee mode.
+
+I highly recommend you enable encryption if you care about your
+security!  Zigbee sniffers are readily available and hackers use
+them, because all sorts of industrial equipment uses this protocol.
+Zigbee also has significantly longer range than Wifi!  Encryption is
+a standard part of the protocol, but outside the scope of this
+document.  The XBees do support the encryption.  One note: It's not
+super strong encryption, in that it doesn't defend well against replay
+attacks and other types of cryptographic attacks.  So I still recommed
+you keep your bank account numbers off this network!  That said, it's
+probably adequate security, even for out-of-band management of
+relatively high value stuff, if you configure the encryption and
+realize the replay limitations (and never transmit your key over the
+air!).  If anyone wants to write a security guide, PLEASE contact me -
+I'd love to see this formalized into a best practice guide.
 
 There are eight roles in this network:
 
  Coordinator - This is both the ZigBee "coordinator" and the master
                "hub" for the message switching.  This XBee must be
-               in API mode.
+               in API mode - NOT transparent mode.
 
  Terminal    - Essentially "dumb terminal" remote nodes that can
                access the CUI and initiate connections to other
-               nodes.  These XBees must be in transparent mode.
+               nodes.  These XBees must be in transparent mode
+               and have a destination address of 00 00 (the
+               default).
 
  Console     - These are "server" nodes, I.E. connections to a
                host (or router, switch, etc) that only receives
@@ -115,6 +191,56 @@ installed, and then put regular series 2 XBees with chip antennas
 on other devices nearby - no use buying more expensive pros
 unnecessarily!
 
+HOW TO USE:
+
+Use X-CTU to configure a coordinator in API mode (you'll have to
+load API Coordinator firmware on it).  Somehow connect that XBee
+to your Linux/Unix host (I use a USB dongle).  Then run server.pl,
+with two arguments: the serial port on the Linux host and the
+baud rate to use (default XBee baud rate is 9600, but I recommend
+115200 for the coordinator - just remember your XBee has to be
+configured for this speed).  You need to set the network information
+and other configuration items standard for a coordinator.  Make
+sure to set a network identity (NI) of "COORDINATOR master" (you
+can use whatever word you want for master).
+
+Now, configure a couple more XBees.  These should be in "AT"
+or transparent mode, so you'll want to load the router+end-device
+AT mode firmware on them.  Make one a "TERM", so give this Xbee
+a "network identity" (NI) like "TERM terminal" (make sure you
+don't put a space in front of TERM - X-CTU likes to do that).
+Plug it into the appropriate dongle and open a terminal window
+to it.  If you hit enter, you should see a prompt for termnet.
+The most useful commands are "help", "hosts", and
+"connect <hostname>" (use a hostname from the hosts command).
+To disconnect, hit "ESC" 4 times in a row after a short pause
+(that is, stop typing, then rapidly hit ESC 4 times, then wait
+for the prompt).  Obvioulsy for this to work, your XBee needs
+to have the right network settings so it can join the network.
+
+You'll want something to connect to.  Again, configure another
+XBee, again with router+end-device AT mode firmware, and set
+the appropriate network parameters.  Give it a network identity
+("NI" command) of "CONSOLE console1" or something similar.  Now
+plug it in (with the right adapter boards) into something that
+can accept serial input.  The easiest is a Linux PC, using a
+USB adapter card.  If using Linux, set up a getty on the right
+serial port, so it listens for input from that USB XBee.
+
+Now you can go back to your terminal window to your "TERM"
+XBee and type "discover" followed by enter.  If you wait 30
+seconds or so and then type "hosts", you should see console1
+in the list of hosts (you probably only have your coordinator,
+terminal, and console showing up - that's okay - but if you
+are missing something, your XBees either aren't joining the
+network or aren't configured with the right network identity
+strings.  If you see your console, you can type "c console1"
+(or whatever y ou called it - the "c" is connect, followed
+by a space and the remote "hostname").  You should then see
+a login prompt.
+
+SOURCE OF XBEE STUFF:
+
 Some XBee products that work with this:
 
 USB dongle (you also need an XBee!):
@@ -122,6 +248,11 @@ USB dongle (you also need an XBee!):
 
 One of many compatible XBees:
   https://www.sparkfun.com/products/10414
+
+(I don't make any money from Sparkfun or Digi, so I have no
+vested interest in recommending Sparkfun, other than believing
+they are one of the most responsive companies I've seen for the
+hobbiest)
 
 I've had good luck interfacing XBees to random serial-capable
 devices like Arduinos, FPGAs, etc.  My personal PDP-8 retro
