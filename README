@@ -5,7 +5,7 @@ This code allows you to build an XBee terminal network using Digi XBee
 modules.  This code only works with Series 2 or 2.5 modules, and has
 only been tested in ZigBee mode.
 
-There are four roles in this network:
+There are seven roles in this network:
 
  Coordinator - This is both the ZigBee "coordinator" and the master
                "hub" for the message switching.  This XBee must be
@@ -19,6 +19,24 @@ There are four roles in this network:
                host (or router, switch, etc) that only receives
                connections.  These XBees also must be in
                transparent mode.
+
+ ASR33Console- This is similar to Console, but does some
+               translation to make the remote host appear more
+               like an ASR33 terminal.  For instance, <CR> sent
+               to the host becomes <LF>, while <CR> sent from
+               the host becomes <CR><LF>.  In addition, _
+               becomes the UTF-8 representation for left
+               arrow when sent from the host, while ^ becomes
+               an up-arrow.  This is to better simulate what
+               these devices actually did when ASR33 teletypes
+               roamed the earth.  Probably of little interest
+               unless you are networking a dinosaur.
+
+ Sensor      - These are nodes we log sensor telemetry from.
+               Telemetry should be in standard XBee format.
+
+ API         - These are processed like terminals, but are in
+               "smart" API mode, not dumb terminal mode.
 
  Unknown     - All other XBees are in "unknown" mode.  They can 
                initiate connections as terminals can, but some
@@ -39,3 +57,68 @@ and general network configuration that is required for the system
 to properly function.  This is outside of the scope of this
 document.
 
+This code is designed to talk to the COORDINATOR node in API
+mode.  Unfortunately, there is no code yet to do serial connections
+terminating to/from the COORDINATOR, so you will need to have a
+second XBee on your coordinator host to connect to it.
+
+I also recommend that you set the controller to use the highest
+possible baud rate that works reliably with your system (115200
+for me).  This is set with the AT BD command.  The XBee and the
+Termnet software both have to be set to the same baud rate.  Note
+that you will not achieve anything even close to 115,200 bps over
+the air with these - it's a slow speed interface.
+
+These devices do not work well without hardware handshaking.  It
+is typically not all that important to have handshaking on the
+interface towards the computer, but it's critical to have CTS
+handshaking towards the XBee enabled.  They come set to work this
+way by default so long as your interface does something useful
+with the CTS line (the Sparkfun dongles do).  If you don't have
+this configured correctly, you will see tons of missing characters
+in your communication.  Unfortunately, this somewhat limits the
+usefullness of these devices - what is needed is a high-buffer
+interface for devices like some routers (Mikrotik, I'm looking
+at you) that don't support CTS handshaking.  I'll probably design
+a board that uses a small microcontroller to do deep buffering
+specifically for this purpose.
+
+I highly recommend SparkFun as a source for the XBees.  They are
+also an excellent source for the USB "XBee Explorer", which, combined
+with the appropriate Series 2/2.5 XBee module, seems to work better
+than Digi's own XStick (I bricked my XStick just in normal use in
+the first hour of operation, and found the thing generally flaky).
+
+I also recommend you make sure you install a router version of
+the firmware (router+end device, for instance), and power the
+XBee all the time, as this code doesn't yet work good with
+sleeping XBees.  One exception is sensors, which can sleep without
+any bad effects.
+
+All communication goes through the coordinator in this system, so
+you need to make sure the devices can communicate well with the
+coordinator (this is needed to join the network anyhow).  I've had
+good luck using the Zigbee mesh networking in these devices - it
+seems to generally just work, so if you have signal problems, stick
+an XBee router in between the two end points.  An XBee router can
+be nothing more than an XBee with two wires connected between it
+and a 2-AA battery holder (for a perfect portable solution).  I
+also recommend the XBee Pros with wire antenna when your signal is
+a bit weak.  So I typically put an XBee pro in each major location
+I want to ensure has good communication, with the router software
+installed, and then put regular series 2 XBees with chip antennas
+on other devices nearby - no use buying more expensive pros
+unnecessarily!
+
+Some XBee products that work with this:
+
+USB dongle (you also need an XBee!):
+  https://www.sparkfun.com/products/11697
+
+One of many compatible XBees:
+  https://www.sparkfun.com/products/10414
+
+I've had good luck interfacing XBees to random serial-capable
+devices like Arduinos, FPGAs, etc.  My personal PDP-8 retro
+computer (running on an FPGA) works great with it!  Just watch
+your logic levels!
