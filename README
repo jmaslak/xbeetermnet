@@ -5,7 +5,7 @@ This code allows you to build an XBee terminal network using Digi XBee
 modules.  This code only works with Series 2 or 2.5 modules, and has
 only been tested in ZigBee mode.
 
-There are seven roles in this network:
+There are eight roles in this network:
 
  Coordinator - This is both the ZigBee "coordinator" and the master
                "hub" for the message switching.  This XBee must be
@@ -37,6 +37,11 @@ There are seven roles in this network:
 
  API         - These are processed like terminals, but are in
                "smart" API mode, not dumb terminal mode.
+
+ Router      - These are also processed like terminals.  The
+               intention is to differentiate them from devices
+               that are connected to something else, like a
+               TERM or a CONSOLE in the host list.
 
  Unknown     - All other XBees are in "unknown" mode.  They can 
                initiate connections as terminals can, but some
