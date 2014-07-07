@@ -300,16 +300,29 @@ sub receive_receive {
 	
 	my $data = $rx->{data};
 	
-	# Check for ASR33 Destination
+	# Check for ASR33 Source
 	# Simulate MARK parity
 	if (exists($HOSTREV{$src}) and
 	    exists($DISCOVERY{$HOSTREV{$src}})) {
-    		if ($DISCOVERY{$HOSTREV{$src}}->{type} eq 'ASR33') {
-			$data =~ s/\n/\n\r/sg;
+    		if ($DISCOVERY{$HOSTREV{$src}}->{type} eq 'ASR33CONSOLE') {
 			my $newdata = '';
 			foreach my $c (split //, $data) {
-				$c = chr(128 | ord($c));
+				if (ord($c) > 127) {
+					$c = chr(ord($c) - 128);
+				}
+				if ($c eq '^') {
+					# Up arrow
+					$c = "\x{2191}";
+					utf8::encode($c);
+				} elsif ($c eq '_') {
+					# Left arrow
+					$c = "\x{2190}";
+					utf8::encode($c);
+				}
 				$newdata .= $c;
+				#if (ord($c) == 13) {
+				#	$newdata .= chr(10);
+				#}
 			}
 			$data = $newdata;
 		}
@@ -323,6 +336,7 @@ sub receive_at_response {
 	if (scalar(@_) != 1) { confess 'invalid call' }
 	my ($rx) = @_;
 
+	if (!defined($rx->{sh})) { return; }
 	my $src = sprintf('%x:%x', $rx->{sh}, $rx->{sl});
 	my $frameid = $rx->{frame_id};
 
@@ -686,6 +700,15 @@ sub tx {
 			# $data =~ s/\n/\n\r/sg; # Not to console
 			my $newdata = '';
 			foreach my $c (split //, $data) {
+				# Reverse CR and LF
+				# Default newline is just CR.
+				# We're going to make it LF.
+				# To send a CR, send CTRL-J.
+				if ($c eq chr(13)) {
+					$c = chr(10);
+				} elsif ($c eq chr(10)) {
+					$c = chr(13);
+				}
 				$c = chr(128 | ord($c));
 				$newdata .= $c;
 			}
