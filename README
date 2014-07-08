@@ -166,9 +166,7 @@ specifically for this purpose.
 
 I highly recommend SparkFun as a source for the XBees.  They are
 also an excellent source for the USB "XBee Explorer", which, combined
-with the appropriate Series 2/2.5 XBee module, seems to work better
-than Digi's own XStick (I bricked my XStick just in normal use in
-the first hour of operation, and found the thing generally flaky).
+with the appropriate Series 2/2.5 XBee module, seems to work great.
 
 I also recommend you make sure you install a router version of
 the firmware (router+end device, for instance), and power the
