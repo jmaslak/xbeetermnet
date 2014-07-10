@@ -1,6 +1,40 @@
+NOTE:
+
+To the extent legally possible (where not bound by licenses of Perl
+or Perl modules that this code uses), all code in this project is
+PUBLIC DOMAIN and can be used for any purpose.  However, you'll want
+to check with a lawyer, as this code uses Perl modules that are under
+the Artistic License, which is included below.
+
+I will not sue you, no matter what you do with this code.
+
+I am not worried about you suing me because the code doesn't work.  I
+make no promises that it does.
+
+My views on the GPL are similar to this blog entry by someone else:
+  http://www.shlomifish.org/philosophy/open-source/gpl-bsd-and-suckerism/
+
+If you don't like my views, feel free to distribute my code as GPL. You
+can even remove the above text, since I wrote it and put this into the
+public domain.  Heck, you can be an $#@! and not even mention my name
+if you use my code in another product.
+
+To obtain the source for all modules linked to the Termnet code,
+use CPAN.  The code is publicly available.
+
+The below is the Artistic license, which some modules use that my code
+depends upon.  Note that this license has some restrictions on
+modifying it's text.  But as far as I care, you can do what you want
+to it.  I won't come after you.  The Perl Foundation might, though, so
+I post it here.  I do not believe it applies to my code (I don't
+distribute modified versions of these modules). But open source
+licenses have all the dangers that the iTunes agreement has when
+you click "I agree."  You should know what the license is on the 
+code you are using, since you're probably agreeing to it.
+
 The Artistic License 2.0
 
-           Copyright (c) 2014 Joel Maslak
+	Copyright (c) 2000-2006, The Perl Foundation
 
      Everyone is permitted to copy and distribute verbatim copies
       of this license document, but changing it is not allowed.
