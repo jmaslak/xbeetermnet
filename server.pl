@@ -735,6 +735,7 @@ sub tx {
 	}
 
 	my $frameid = $api->tx($dest, $pkt, 1);
+	$! = 0; # Bug workaround
 	$FRAMEID{$frameid} = {
 		addr => $addr,
 		type => 'TX',
