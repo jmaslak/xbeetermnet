@@ -41,6 +41,7 @@ my $PROMPTLEN=9;
 
 my %ZIGBEE_API_TYPE = (
 	136 => 'AT_RESPONSE',
+	138 => 'MODEM_STATUS',
 	139 => 'TX_STATUS',
 	144 => 'RECEIVE',
 	146 => 'SAMPLE',
@@ -415,6 +416,8 @@ sub discover_neighbor {
 
 	if ($type eq 'CONSOLE') {
 		$STATE{$src} = 'CONSOLE';
+	} if ($type eq 'API') { # XXX TEMPORARY
+		$STATE{$src} = 'API';
 	} elsif ($type eq 'ASR33CONSOLE') {
 		$STATE{$src} = 'ASR33CONSOLE';
 	} elsif ($type eq 'COORDINATOR') {
@@ -517,6 +520,7 @@ sub handle_input {
 		if (($data =~ /\x1b+$/) and
 		    ((!exists($HOSTREV{$src})) or
 		     (($DISCOVERY{$HOSTREV{$src}}->{type} ne 'CONSOLE')
+		      and ($DISCOVERY{$HOSTREV{$src}}->{type} ne 'API')
 		      and ($DISCOVERY{$HOSTREV{$src}}->{type} ne 'ASR33CONSOLE')))) {
 
 			my $esc = $data;
@@ -562,6 +566,7 @@ sub command {
 	# Ignore packets in command mode from hosts
 	if (exists($HOSTREV{$addr}) and
 	    (($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'CONSOLE')
+	    or ($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'API')
     	    or ($DISCOVERY{$HOSTREV{$addr}}->{type} eq 'ASR33CONSOLE'))) {
 		if (exists($STATE{$addr}) and ($STATE{$addr} eq 'COMMAND')) {
 			delete $STATE{$addr};
@@ -974,7 +979,7 @@ sub cmd_disconnect {
 	my $dhost = lc($params->[0]);
 
 	# XXX Can't target users yet
-	if ((!exists($DISCOVERY{$dhost})) or (($DISCOVERY{$dhost}->{type} ne 'CONSOLE') and ($DISCOVERY{$dhost}->{type} ne 'ASR33CONSOLE'))) {
+	if ((!exists($DISCOVERY{$dhost})) or (($DISCOVERY{$dhost}->{type} ne 'CONSOLE') and ($DISCOVERY{$dhost}->{type} ne 'API') and ($DISCOVERY{$dhost}->{type} ne 'ASR33CONSOLE'))) {
 		$outbuff .= "${TERMERR}Invalid host name (use HELP to get host list)$CRLF";
 		$outbuff .= $PROMPT;
 
