@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 #
-# Copyright 2014 (C) Joel Maslak
+# Copyright 2014 (C) J. Maslak
 #
 
 use strict;
